@@ -1,0 +1,519 @@
+        <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeatherNow - Weather Forecast</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .weather-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .sunny { 
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
+        }
+        
+        .cloudy { 
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); 
+        }
+        
+        .rainy { 
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); 
+        }
+        
+        .snowy { 
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); 
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .nav-blur {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-search {
+            background: white;
+            color: #6f42c1;
+            border: none;
+        }
+        
+        .btn-search:hover {
+            background: rgba(255, 255, 255, 0.9);
+            color: #6f42c1;
+        }
+        
+        .form-control-glass {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+        
+        .form-control-glass::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .form-control-glass:focus {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
+            color: white;
+        }
+        
+        .weather-icon {
+            font-size: 4rem;
+        }
+        
+        .temp-display {
+            font-size: 4rem;
+            font-weight: bold;
+        }
+        
+        .detail-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .detail-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .spinner-border-custom {
+            width: 3rem;
+            height: 3rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top nav-blur">
+        <div class="container">
+            <div class="navbar-brand d-flex align-items-center text-white">
+                <div class="bg-primary rounded-circle p-2 me-3">
+                    <span style="font-size: 1.5rem;">🌤️</span>
+                </div>
+                <h1 class="h3 mb-0 fw-bold">WeatherNow</h1>
+            </div>
+            <div class="text-white-50">
+                <small id="currentTime"></small>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-5 pt-5">
+        <!-- Search Section -->
+        <div class="row justify-content-center mb-4">
+            <div class="col-lg-8">
+                <div class="card glass-card border-0 rounded-4 p-4">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <input 
+                                type="text" 
+                                id="cityInput" 
+                                class="form-control form-control-lg form-control-glass rounded-pill"
+                                placeholder="Enter city name (e.g., London, New York, Tokyo)"
+                            >
+                        </div>
+                        <div class="col-md-4">
+                            <button 
+                                id="searchBtn"
+                                class="btn btn-search btn-lg w-100 rounded-pill fw-semibold"
+                            >
+                                🔍 Search Weather
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="text-center py-5 d-none">
+            <div class="spinner-border spinner-border-custom text-white mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-white h5">Fetching weather data...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="d-none">
+            <div class="row justify-content-center">
+                <div class="col-lg-6">
+                    <div class="card bg-danger bg-opacity-25 border-danger border-opacity-50 rounded-4 p-4">
+                        <div class="text-center text-white">
+                            <div style="font-size: 4rem;">❌</div>
+                            <h3 class="mt-3">City Not Found</h3>
+                            <p class="opacity-75">Please check the spelling and try again.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weather Display -->
+        <div id="weatherDisplay" class="d-none">
+            <!-- Main Weather Card -->
+            <div class="row justify-content-center mb-4">
+                <div class="col-lg-10">
+                    <div id="mainWeatherCard" class="card weather-card border-0 rounded-4 p-4 text-white">
+                        <div class="row align-items-center">
+                            <div class="col-md-8 text-center text-md-start mb-4 mb-md-0">
+                                <h2 id="cityName" class="display-4 fw-bold mb-2">London</h2>
+                                <p id="weatherDescription" class="h4 opacity-75 mb-4">Partly Cloudy</p>
+                                <div class="d-flex align-items-center justify-content-center justify-content-md-start">
+                                    <span id="weatherIcon" class="weather-icon me-4">⛅</span>
+                                    <span id="temperature" class="temp-display">22°C</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <p class="small opacity-75 mb-2">Feels like</p>
+                                <p id="feelsLike" class="h2 fw-semibold">25°C</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weather Details Grid -->
+            <div class="row g-4 mb-4">
+                <!-- Humidity -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card detail-card border-0 rounded-4 p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span style="font-size: 2rem;">💧</span>
+                            <small class="text-white-50 fw-medium">HUMIDITY</small>
+                        </div>
+                        <p id="humidity" class="h2 fw-bold text-white mb-1">65%</p>
+                        <small id="humidityDesc" class="text-white-50">Comfortable</small>
+                    </div>
+                </div>
+
+                <!-- Wind Speed -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card detail-card border-0 rounded-4 p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span style="font-size: 2rem;">💨</span>
+                            <small class="text-white-50 fw-medium">WIND</small>
+                        </div>
+                        <p id="windSpeed" class="h2 fw-bold text-white mb-1">12 km/h</p>
+                        <small id="windDirection" class="text-white-50">NE</small>
+                    </div>
+                </div>
+
+                <!-- Pressure -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card detail-card border-0 rounded-4 p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span style="font-size: 2rem;">🌡️</span>
+                            <small class="text-white-50 fw-medium">PRESSURE</small>
+                        </div>
+                        <p id="pressure" class="h2 fw-bold text-white mb-1">1013 hPa</p>
+                        <small id="pressureDesc" class="text-white-50">Normal</small>
+                    </div>
+                </div>
+
+                <!-- Visibility -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card detail-card border-0 rounded-4 p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span style="font-size: 2rem;">👁️</span>
+                            <small class="text-white-50 fw-medium">VISIBILITY</small>
+                        </div>
+                        <p id="visibility" class="h2 fw-bold text-white mb-1">10 km</p>
+                        <small id="visibilityDesc" class="text-white-50">Excellent</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Info -->
+            <div class="row g-4">
+                <!-- Sun Times -->
+                <div class="col-md-6">
+                    <div class="card detail-card border-0 rounded-4 p-4">
+                        <h3 class="h5 fw-semibold text-white mb-4 d-flex align-items-center">
+                            <span class="me-2" style="font-size: 1.5rem;">🌅</span>
+                            Sun Times
+                        </h3>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="text-white-50">Sunrise</span>
+                                    <span id="sunrise" class="text-white fw-medium">06:30 AM</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="text-white-50">Sunset</span>
+                                    <span id="sunset" class="text-white fw-medium">07:45 PM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Temperature Range -->
+                <div class="col-md-6">
+                    <div class="card detail-card border-0 rounded-4 p-4">
+                        <h3 class="h5 fw-semibold text-white mb-4 d-flex align-items-center">
+                            <span class="me-2" style="font-size: 1.5rem;">🌡️</span>
+                            Temperature Range
+                        </h3>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="text-white-50">High</span>
+                                    <span id="tempMax" class="text-white fw-medium">25°C</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="text-white-50">Low</span>
+                                    <span id="tempMin" class="text-white fw-medium">18°C</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Default Message -->
+        <div id="defaultMessage" class="text-center py-5">
+            <div style="font-size: 6rem;" class="mb-4">🌍</div>
+            <h2 class="display-5 fw-bold text-white mb-4">Welcome to WeatherNow</h2>
+            <p class="text-white-50 h5">Search for any city to get detailed weather information</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // OpenWeatherMap API configuration
+        const apiKey = "61630095a0c5a0b73b1e98978f7540f0";
+        const apiUrl = "https://api.openweathermap.org/data/2.5/weather?units=metric&q=";
+
+        // Weather icon mapping
+        const weatherIcons = {
+            '01d': '☀️', '01n': '🌙',
+            '02d': '⛅', '02n': '☁️',
+            '03d': '☁️', '03n': '☁️',
+            '04d': '☁️', '04n': '☁️',
+            '09d': '🌧️', '09n': '🌧️',
+            '10d': '🌦️', '10n': '🌧️',
+            '11d': '⛈️', '11n': '⛈️',
+            '13d': '❄️', '13n': '❄️',
+            '50d': '🌫️', '50n': '🌫️'
+        };
+
+        // Weather condition background mapping
+        const weatherConditions = {
+            'clear': 'sunny',
+            'clouds': 'cloudy',
+            'rain': 'rainy',
+            'drizzle': 'rainy',
+            'thunderstorm': 'rainy',
+            'snow': 'snowy',
+            'mist': 'cloudy',
+            'fog': 'cloudy',
+            'haze': 'cloudy'
+        };
+
+        // Convert wind direction from degrees to compass
+        function getWindDirection(degrees) {
+            const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+            return directions[Math.round(degrees / 22.5) % 16];
+        }
+
+        // Convert timestamp to readable time
+        function formatTime(timestamp) {
+            const date = new Date(timestamp * 1000);
+            return date.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+            });
+        }
+
+        // Get visibility description
+        function getVisibilityDescription(visibility) {
+            const km = visibility / 1000;
+            if (km >= 10) return 'Excellent';
+            if (km >= 5) return 'Good';
+            if (km >= 2) return 'Moderate';
+            return 'Poor';
+        }
+
+        // Get humidity description
+        function getHumidityDescription(humidity) {
+            if (humidity >= 70) return 'High';
+            if (humidity >= 40) return 'Comfortable';
+            return 'Low';
+        }
+
+        // Get pressure description
+        function getPressureDescription(pressure) {
+            if (pressure >= 1020) return 'High';
+            if (pressure >= 1000) return 'Normal';
+            return 'Low';
+        }
+
+        // DOM elements
+        const cityInput = document.getElementById('cityInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const loadingState = document.getElementById('loadingState');
+        const errorState = document.getElementById('errorState');
+        const weatherDisplay = document.getElementById('weatherDisplay');
+        const defaultMessage = document.getElementById('defaultMessage');
+        const mainWeatherCard = document.getElementById('mainWeatherCard');
+
+        // Weather display elements
+        const cityName = document.getElementById('cityName');
+        const weatherDescription = document.getElementById('weatherDescription');
+        const weatherIcon = document.getElementById('weatherIcon');
+        const temperature = document.getElementById('temperature');
+        const feelsLike = document.getElementById('feelsLike');
+        const humidity = document.getElementById('humidity');
+        const windSpeed = document.getElementById('windSpeed');
+        const windDirection = document.getElementById('windDirection');
+        const pressure = document.getElementById('pressure');
+        const visibility = document.getElementById('visibility');
+        const sunrise = document.getElementById('sunrise');
+        const sunset = document.getElementById('sunset');
+        const tempMax = document.getElementById('tempMax');
+        const tempMin = document.getElementById('tempMin');
+
+        // Update current time
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour12: true, 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            document.getElementById('currentTime').textContent = timeString;
+        }
+
+        // Search weather function using real API
+        async function searchWeather() {
+            const city = cityInput.value.trim();
+            
+            if (!city) {
+                alert('Please enter a city name');
+                return;
+            }
+
+            // Show loading state
+            hideAllStates();
+            loadingState.classList.remove('d-none');
+
+            try {
+                const response = await fetch(apiUrl + city + `&appid=${apiKey}`);
+                
+                if (response.status === 404) {
+                    showError();
+                    return;
+                }
+
+                const data = await response.json();
+                
+                if (data.cod === 200) {
+                    displayWeatherFromAPI(data);
+                } else {
+                    showError();
+                }
+            } catch (error) {
+                console.error('Error fetching weather data:', error);
+                showError();
+            }
+        }
+
+        // Display weather data from API
+        function displayWeatherFromAPI(data) {
+            hideAllStates();
+            
+            // Extract data from API response
+            const temp = Math.round(data.main.temp);
+            const feelsLikeTemp = Math.round(data.main.feels_like);
+            const weatherMain = data.weather[0].main.toLowerCase();
+            const weatherIconCode = data.weather[0].icon;
+            const description = data.weather[0].description;
+            const windDeg = data.wind.deg || 0;
+            const visibilityKm = Math.round(data.visibility / 1000);
+            
+            // Update main weather card
+            cityName.textContent = `${data.name}, ${data.sys.country}`;
+            weatherDescription.textContent = description.charAt(0).toUpperCase() + description.slice(1);
+            weatherIcon.textContent = weatherIcons[weatherIconCode] || '🌤️';
+            temperature.textContent = `${temp}°C`;
+            feelsLike.textContent = `${feelsLikeTemp}°C`;
+            
+            // Update weather details
+            humidity.textContent = `${data.main.humidity}%`;
+            windSpeed.textContent = `${Math.round(data.wind.speed * 3.6)} km/h`; // Convert m/s to km/h
+            windDirection.textContent = getWindDirection(windDeg);
+            pressure.textContent = `${data.main.pressure} hPa`;
+            visibility.textContent = `${visibilityKm} km`;
+            sunrise.textContent = formatTime(data.sys.sunrise);
+            sunset.textContent = formatTime(data.sys.sunset);
+            tempMax.textContent = `${Math.round(data.main.temp_max)}°C`;
+            tempMin.textContent = `${Math.round(data.main.temp_min)}°C`;
+            
+            // Update descriptions
+            document.getElementById('humidityDesc').textContent = getHumidityDescription(data.main.humidity);
+            document.getElementById('pressureDesc').textContent = getPressureDescription(data.main.pressure);
+            document.getElementById('visibilityDesc').textContent = getVisibilityDescription(data.visibility);
+            
+            // Update card background based on weather condition
+            const condition = weatherConditions[weatherMain] || 'cloudy';
+            mainWeatherCard.className = `card weather-card ${condition} border-0 rounded-4 p-4 text-white`;
+            
+            weatherDisplay.classList.remove('d-none');
+        }
+
+        // Show error state
+        function showError() {
+            hideAllStates();
+            errorState.classList.remove('d-none');
+        }
+
+        // Hide all states
+        function hideAllStates() {
+            loadingState.classList.add('d-none');
+            errorState.classList.add('d-none');
+            weatherDisplay.classList.add('d-none');
+            defaultMessage.classList.add('d-none');
+        }
+
+        // Event listeners
+        searchBtn.addEventListener('click', searchWeather);
+        
+        cityInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchWeather();
+            }
+        });
+
+        // Initialize
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Real weather API is now active with Bootstrap 5
+        console.log('Weather app is now using Bootstrap 5 with live OpenWeatherMap API data!');
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'960925a3b7f6dccb',t:'MTc1Mjc0OTA5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
